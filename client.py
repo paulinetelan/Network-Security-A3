@@ -78,14 +78,15 @@ if __name__ == "__main__":
 
             # send data size to server
             data_size = len(data)
-            servsock.sendall((data_size).to_bytes(data_size.bit_length()+7//8, 'big') or b'\0')
+            servsock.sendall(data_size.to_bytes(4, "big"))
 
             # send data to server
             servsock.sendall(str.encode(data))
 
             # get server response
             s_resp = servsock.recv(4096)
-            print(s_resp.decode("utf-8", "replace"))
+
+            print(s_resp.decode("utf-8", "ignore"))
 
         except Exception as e:
             print("ERROR: {0}".format(e))
@@ -94,7 +95,8 @@ if __name__ == "__main__":
     elif cmd == "read":
         try:
             # Get expected data size
-            data_size = int.from_bytes(servsock.recv(4), "big")
+            data = servsock.recv(4)
+            data_size = int.from_bytes(data, "big")
 
             # Check if data is too big
             if shutil.disk_usage("/").free < data_size:
@@ -104,8 +106,9 @@ if __name__ == "__main__":
             # Receive data
             data = servsock.recv(data_size)
 
-            # TODO change so that it prints for images too
-            print(data.decode("utf-8", "replace"))
+            # print to stdout
+            sys.stdout.buffer.write(data)
+            print()
 
         except Exception as e:
             print("ERROR: {0}".format(e))

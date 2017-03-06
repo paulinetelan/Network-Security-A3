@@ -54,6 +54,7 @@ if __name__ == "__main__":
             encrypted = True
             iv = param[1]
             iv_str = "IV: "+ param[1].decode("utf-8", "replace")
+        
         print("Crypto: " + alg+ " "+ iv_str)
 
         try:
@@ -72,7 +73,7 @@ if __name__ == "__main__":
             # TODO encrypt all traffic from here on
 
             # if cmd = write, download file from client
-            if cmd[0] == "w":
+            if cmd == "write":
                 try:
                     # Open filename
                     f_obj = open(filename, "wb+")
@@ -102,26 +103,30 @@ if __name__ == "__main__":
                     connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
 
             # else, send file to client
-            elif cmd[0] == "r":
+            elif cmd == "read":
                 try:
+                    # send data size to server
+                    data_size = os.stat(filename).st_size
+                    data_size_bytes = data_size.to_bytes(4, "big")
+                    connection.sendall(data_size_bytes)
+
                     # Open filename 
                     f_obj = open(filename, "rb+")
 
                     # Read file
                     f_data = f_obj.read()
-
-                   # send data size to server
-                    data_size = os.stat(filename).st_size
-                    connection.sendall((data_size).to_bytes(data_size.bit_length()+7//8, 'big') or b'\0')
-
+                    
                     # send data to server
                     connection.sendall(f_data)
 
                     # Clean up
                     f_obj.close()
-                except:
+                except Exception as e:
                     print("ERROR: {0}".format(e))
                     connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
+
+        except Exception as e:
+            print("ERROR: {0}".format(e))
 
         finally:
             connection.shutdown(1)
