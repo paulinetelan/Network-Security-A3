@@ -17,6 +17,11 @@ import cryptolib
 
 #### MAIN ####
 if __name__ == "__main__":
+    
+    # checks if pw is correct by comparing received hash to hash of iv in server 
+    def verifypass(received_hash_iv):
+        return received_hash_iv == cryptolib.md5hash(iv)
+    
     # Parse input
     port = int(sys.argv[1].strip("'"))
 
@@ -63,72 +68,80 @@ if __name__ == "__main__":
             data = pickle.loads(data)
             cmd = data[0]
             filename = data[1]
-            # decrypt if cipher specified
+            pass_ok = 1 # 1 = correct password, 0 = wrong password
+            # decrypt 
             if encrypted:
                 cmd = cryptolib.decrypt(data[0], alg, key, iv)
                 filename = cryptolib.decrypt(data[1], alg, key, iv)
+                iv_hash = cryptolib.decrypt(data[2], alg, key, iv)
                 cmd = cmd.decode("utf-8", "ignore")
                 filename = filename.decode("utf-8", "ignore")
+                
+                if not verifypass(iv_hash):
+                    pass_ok = 0
+            
+            connection.sendall(pass_ok.to_bytes(4, "big"))
 
             # TODO encrypt all traffic from here on
-
-            # if cmd = write, download file from client
-            if cmd == "write":
-                try:
-                    # Open filename
-                    f_obj = open(filename, "wb+")
-
-                    # Get expected data size
-                    data_size = int.from_bytes(connection.recv(4), "big")
-
-                    # fixes issue with buffering
-                    time.sleep(0.1)
-
-                    # Receive data
-                    data = connection.recv(data_size)
-
-                    # Write data to file
-                    f_obj.write(data)
-
-                    print(filename + " uploaded successfully.")
-                    # Send client success message
-                    connection.sendall(bytearray("SERVER: " + filename + " uploaded successfully.", "utf-8"))
-
-                    # Cleanup
-                    f_obj.close()
-                    print("Done.")
-
-                except Exception as e:
-                    print("ERROR: {0}".format(e))
-                    connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
-
-            # else, send file to client
-            elif cmd == "read":
-                try:
-                    # send data size to server
-                    data_size = os.stat(filename).st_size
-                    data_size_bytes = data_size.to_bytes(4, "big")
-                    connection.sendall(data_size_bytes)
-
-                    # Open filename 
-                    f_obj = open(filename, "rb+")
-
-                    # Read file
-                    f_data = f_obj.read()
-                    
-                    # send data to server
-                    connection.sendall(f_data)
-
-                    # Clean up
-                    f_obj.close()
-                except Exception as e:
-                    print("ERROR: {0}".format(e))
-                    connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
+            
+            if pass_ok == 1:
+                # if cmd = write, download file from client
+                if cmd == "write":
+                    try:
+                        # Open filename
+                        f_obj = open(filename, "wb+")
+    
+                        # Get expected data size
+                        data_size = int.from_bytes(connection.recv(4), "big")
+    
+                        # fixes issue with buffering
+                        time.sleep(0.1)
+    
+                        # Receive data
+                        data = connection.recv(data_size)
+    
+                        # Write data to file
+                        f_obj.write(data)
+    
+                        print(filename + " uploaded successfully.")
+                        # Send client success message
+                        connection.sendall(bytearray("SERVER: " + filename + " uploaded successfully.", "utf-8"))
+    
+                        # Cleanup
+                        f_obj.close()
+                        print("Done.")
+    
+                    except Exception as e:
+                        print("ERROR: {0}".format(e))
+                        connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
+    
+                # else, send file to client
+                elif cmd == "read":
+                    try:
+                        # send data size to server
+                        data_size = os.stat(filename).st_size
+                        data_size_bytes = data_size.to_bytes(4, "big")
+                        connection.sendall(data_size_bytes)
+    
+                        # Open filename 
+                        f_obj = open(filename, "rb+")
+    
+                        # Read file
+                        f_data = f_obj.read()
+                        
+                        # send data to server
+                        connection.sendall(f_data)
+    
+                        # Clean up
+                        f_obj.close()
+                    except Exception as e:
+                        print("ERROR: {0}".format(e))
+                        connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
 
         except Exception as e:
             # only breaks if wrong password is used
             print("Wrong password.")
-            connection.sendall(bytearray("SERVER ERROR: Wrong key.", "utf-8"))
+            connection.sendall(bytearray("        SERVER ERROR: Wrong key.", "utf-8"))
 
         finally:
             connection.shutdown(1)

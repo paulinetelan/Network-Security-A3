@@ -10,29 +10,22 @@
 
 import random, os, sys
 from random import choice
-import cryptography
-from cryptography.hazmat.primitives import padding, keywrap
+import cryptography, hashlib
+from cryptography.hazmat.primitives import padding, keywrap, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # randomly generates alphanumeric 32-char string key 
 def generateKey():
     return ''.join(choice('0123456789ABCDEF') for i in range(32))
 
-# checks if key > key_size and returns key of proper length
-# by only taking first key_size bits
-# key = string, key_size = integer
-def verifyKey(key, key_size):
-    ret = key.encode()
-    # convert to bytes
-    key_size = int(key_size/8)
-    if len(key) > key_size:
-        ret = key[:key_size]
-        ret = ret.encode()
-    elif len(key) < key_size:
-        ret = pad(key.encode(), key_size)
-    return ret
-
+# b = bytes
+# returns md5 hash of b in bytes
+def md5hash(b):
+    m = hashlib.md5()
+    m.update(b)
+    return m.digest()
 
 # randomly generates 128-bit IV
 def generateIV():
@@ -44,6 +37,16 @@ def pad(dbytes, padsize):
     # create instance of padder
     padder = padding.PKCS7(padsize).padder()
     return padder.update(dbytes) + padder.finalize()
+    
+# returns key for aes
+def makeKey(passw, keysize):
+    # convert to bytes
+    keysize = int(keysize/8)
+    backend = default_backend()
+    kdf = PBKDF2HMAC(hashes.SHA256(), length = keysize,salt = "bbbbbbbbbbbbbbbb".encode(), iterations=100000,backend = backend)
+    
+    key = kdf.derive(passw.encode())
+    return key
 
 # encrypts plaintext and returns ciphertext in bytes
 # based on parameter cipher
@@ -56,7 +59,7 @@ def encrypt(plain, alg, key, iv):
 
     # pad plaintext to 128-bits
     padded_plain = pad(plain, 128)
-    verifiedKey = verifyKey(key, key_size)
+    verifiedKey = makeKey(key, key_size)
 
     # encrypt
     cipher = Cipher(algorithms.AES(verifiedKey), modes.CBC(iv), backend)
@@ -72,7 +75,7 @@ def decrypt(ciphertext, alg, key, iv):
     key_size = int(alg.strip("aes"))
     backend = default_backend()
 
-    verifiedKey = verifyKey(key, key_size)
+    verifiedKey = makeKey(key, key_size)
 
     # decrypt
     cipher = Cipher(algorithms.AES(verifiedKey), modes.CBC(iv), backend)

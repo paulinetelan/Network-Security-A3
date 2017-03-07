@@ -18,18 +18,17 @@
 import sys, socket, shutil
 import array, pickle, struct
 import time
-# crypto functions
-import cryptolib
-
-# Disconnects client from server
-def disconnect():
-    # close connection
-    servsock.close()
-    sys.exit()
+import cryptolib, hashlib
 
 #### MAIN ####
 if __name__ == "__main__":
-
+    
+    # Disconnects client from server
+    def disconnect():
+        # close connection
+        servsock.close()
+        sys.exit()
+    
     # Parse input
     input = sys.argv
     
@@ -63,15 +62,27 @@ if __name__ == "__main__":
     if encrypted:
         cmd_encrypted = cryptolib.encrypt(cmd.encode(), cipher, key, iv)
         filename_encrypted = cryptolib.encrypt(filename.encode(), cipher, key, iv)
-        cmdfilenamearr = [cmd_encrypted, filename_encrypted]
+        # encrypted hash of iv to check for password
+        iv_hash = cryptolib.encrypt(cryptolib.md5hash(iv), cipher, key, iv)
+        cmdfilenamearr = [cmd_encrypted, filename_encrypted, iv_hash]
     
     # send [cmd, filename] 
     # cmd and filename are in bytes
     servsock.sendall(pickle.dumps(cmdfilenamearr))
+    
+    # receive server response
+    data = servsock.recv(4)
+    pass_ok = int.from_bytes(data, "big")
+    # check if correct password
+    if pass_ok == 0:
+        print("_ERROR: Wrong key.")
+        disconnect()
 
     # upload to server
     if cmd == "write":
 
+        # TODO Fix this thing to send blocks instead of the whole file
+        
         try:
             # read from stdin
             data = sys.stdin.read()
