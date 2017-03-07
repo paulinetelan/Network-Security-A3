@@ -126,7 +126,9 @@ if __name__ == "__main__":
                     connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
 
         except Exception as e:
-            print("ERROR: {0}".format(e))
+            # only breaks if wrong password is used
+            print("Wrong password.")
+            connection.sendall(bytearray("SERVER ERROR: Wrong key.", "utf-8"))
 
         finally:
             connection.shutdown(1)
