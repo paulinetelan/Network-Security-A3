@@ -25,10 +25,11 @@ if __name__ == "__main__":
     
     # Disconnects client from server
     def disconnect():
-        # close connection
-        servsock.close()
-        sys.exit()
-    
+        try:
+            servsock.close()
+            sys.exit()
+        except:
+            sys.exit()
     # Parse input
     input = sys.argv
     
@@ -56,52 +57,47 @@ if __name__ == "__main__":
 
     # give server time to process array
     time.sleep(0.1)
-
-    cmdfilenamearr = [cmd, filename]
+    
+    # password authentication
+    iv_encrypted = cryptolib.encrypt(iv, cipher, key, iv)
+    servsock.sendall(iv_encrypted)
+    recvd_iv = servsock.recv(128)
+    if recvd_iv != iv_encrypted:
+        print("ERROR: Wrong password.")
+        disconnect()
+    
+    cmdfilenamearr = pickle.dumps([cmd, filename])
     # if cipher, encrypt
     if encrypted:
-        cmd_encrypted = cryptolib.encrypt(cmd.encode(), cipher, key, iv)
-        filename_encrypted = cryptolib.encrypt(filename.encode(), cipher, key, iv)
         # encrypted hash of iv to check for password
-        iv_hash = cryptolib.encrypt(cryptolib.md5hash(iv), cipher, key, iv)
-        cmdfilenamearr = [cmd_encrypted, filename_encrypted, iv_hash]
-    
+        cmdfilenamearr = cryptolib.encrypt(cmdfilenamearr, cipher, key, iv)
     # send [cmd, filename] 
     # cmd and filename are in bytes
-    servsock.sendall(pickle.dumps(cmdfilenamearr))
+    servsock.sendall(cmdfilenamearr)
     
-    # receive server response
-    data = servsock.recv(4)
-    pass_ok = int.from_bytes(data, "big")
-    # check if correct password
-    if pass_ok == 0:
-        print("_ERROR: Wrong key.")
-        disconnect()
-
     # upload to server
     if cmd == "write":
 
-        # TODO Fix this thing to send blocks instead of the whole file
-        
         try:
-            # read from stdin
-            data = sys.stdin.read()
-
-            # send data size to server
-            data_size = len(data)
-            servsock.sendall(data_size.to_bytes(4, "big"))
-
-            # send data to server
-            servsock.sendall(str.encode(data))
-
-            # get server response
-            s_resp = servsock.recv(4096)
-
-            print(s_resp.decode("utf-8", "ignore"))
-
+            data = sys.stdin.buffer.read(4080)
+            while data:
+                if encrypted:
+                    data_send = cryptolib.encrypt(data, cipher, key, iv)
+                else:
+                    data_send = data
+                servsock.sendall(data_send)
+                data = sys.stdin.buffer.read(4080)
+                
+            # receive server response
+            data = servsock.recv(4096)
+            if encrypted:
+                data = cryptolib.decrypt(data, cipher, key, iv)
+            print(data.decode("utf-8", "ignore"))
+            
         except Exception as e:
             print("ERROR: {0}".format(e))
 
+        
     # download from server 
     elif cmd == "read":
         try:

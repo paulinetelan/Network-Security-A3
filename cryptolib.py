@@ -47,6 +47,11 @@ def makeKey(passw, keysize):
     
     key = kdf.derive(passw.encode())
     return key
+    
+# checks if pw is correct by comparing received hash to hash of iv in server 
+def verifypass(received_hash_iv, iv):
+    return received_hash_iv == md5hash(iv)
+
 
 # encrypts plaintext and returns ciphertext in bytes
 # based on parameter cipher
@@ -76,7 +81,6 @@ def decrypt(ciphertext, alg, key, iv):
     backend = default_backend()
 
     verifiedKey = makeKey(key, key_size)
-
     # decrypt
     cipher = Cipher(algorithms.AES(verifiedKey), modes.CBC(iv), backend)
     decryptor = cipher.decryptor()
