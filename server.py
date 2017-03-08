@@ -122,6 +122,17 @@ if __name__ == "__main__":
                 # else, send file to client
                 elif cmd == "read":
                     try:
+                        filereader = open(filename, 'rb+')
+                        data = filereader.read(4080)
+                        while (data):
+                            if encrypted:
+                                data_send = cryptolib.encrypt(data, alg, key, iv)
+                            else:
+                                data_send = data
+                            connection.sendall(data_send)
+                            data = filereader.read(4080)
+                        filereader.close()
+                        """
                         # send data size to server
                         data_size = os.stat(filename).st_size
                         data_size_bytes = data_size.to_bytes(4, "big")
@@ -138,6 +149,7 @@ if __name__ == "__main__":
             
                         # Clean up
                         f_obj.close()
+                        """
                     except Exception as e:
                         print("ERROR: {0}".format(e))
                         connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))

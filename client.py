@@ -101,6 +101,19 @@ if __name__ == "__main__":
     # download from server 
     elif cmd == "read":
         try:
+            filewriter = open(filename, 'wb+')
+            data = servsock.recv(4096)
+            while data:
+                if encrypted:
+                    data_recv = cryptolib.decrypt(data, cipher, key, iv)
+                else:
+                    data_recv = data
+                filewriter.write(data_recv)
+                if len(data) < 4096:
+                    break
+                data = servsock.recv(4096)
+            
+            """
             # Get expected data size
             data = servsock.recv(4)
             data_size = int.from_bytes(data, "big")
@@ -116,7 +129,7 @@ if __name__ == "__main__":
             # print to stdout
             sys.stdout.buffer.write(data)
             print()
-
+            """
         except Exception as e:
             print("ERROR: {0}".format(e))
 
