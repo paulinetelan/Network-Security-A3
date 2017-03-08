@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # Init socket 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Set server address
-    server_address = ("localhost", port)
+    server_address = ('localhost', port)
     sock.bind(server_address)
 
     # listen for incoming connections
@@ -48,15 +48,15 @@ if __name__ == "__main__":
         # Display parameters
         print("Client " + client_address[0] + " connected.")
         # display iv if cipher specified
-        iv_str = ""
+        iv_str = ''
         alg = param[0]
         encrypted = False
-        if alg != "none":
+        if alg != 'none':
             encrypted = True
             iv = param[1]
-            iv_str = "IV: "+ param[1].decode("utf-8", "replace")
+            iv_str = "IV: "+ param[1].decode('utf-8', 'replace')
         
-        print("Crypto: " + alg+ " "+ iv_str)
+        print("Crypto: " + alg + " " + iv_str)
         
         # password authentication
         if encrypted:
@@ -106,7 +106,8 @@ if __name__ == "__main__":
                         message = "SERVER: " + filename + " uploaded successfully."
                         if encrypted:
                             message = cryptolib.encrypt(message.encode(), alg, key, iv)
-                        
+                        else:
+                            message = message.encode()
                         # Cleanup
                         f_obj.close()
                         print("Done.")
@@ -121,45 +122,32 @@ if __name__ == "__main__":
             
                 # else, send file to client
                 elif cmd == "read":
+                    if encrypted:
+                        blocksize = 4080
+                    else:
+                        blocksize = 4096
                     try:
                         filereader = open(filename, 'rb+')
-                        data = filereader.read(4080)
+                        data = filereader.read(blocksize)
                         while (data):
                             if encrypted:
                                 data_send = cryptolib.encrypt(data, alg, key, iv)
                             else:
                                 data_send = data
                             connection.sendall(data_send)
-                            data = filereader.read(4080)
+                            data = filereader.read(blocksize)
                         filereader.close()
-                        """
-                        # send data size to server
-                        data_size = os.stat(filename).st_size
-                        data_size_bytes = data_size.to_bytes(4, "big")
-                        connection.sendall(data_size_bytes)
-            
-                        # Open filename 
-                        f_obj = open(filename, "rb+")
-            
-                        # Read file
-                        f_data = f_obj.read()
-                        
-                        # send data to server
-                        connection.sendall(f_data)
-            
-                        # Clean up
-                        f_obj.close()
-                        """
                     except Exception as e:
                         print("ERROR: {0}".format(e))
                         connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
-        
+
             except Exception as e:
                 
                 # only breaks if wrong password is used
                 print("ERROR: {0}".format(e))
                 connection.sendall(bytearray("        SERVER ERROR: Wrong key.", "utf-8"))
-        
+                
             finally:
                 connection.shutdown(1)
                 connection.close()
+

@@ -59,12 +59,13 @@ if __name__ == "__main__":
     time.sleep(0.1)
     
     # password authentication
-    iv_encrypted = cryptolib.encrypt(iv, cipher, key, iv)
-    servsock.sendall(iv_encrypted)
-    recvd_iv = servsock.recv(128)
-    if recvd_iv != iv_encrypted:
-        print("ERROR: Wrong password.")
-        disconnect()
+    if encrypted:
+        iv_encrypted = cryptolib.encrypt(iv, cipher, key, iv)
+        servsock.sendall(iv_encrypted)
+        recvd_iv = servsock.recv(128)
+        if recvd_iv != iv_encrypted:
+            print("ERROR: Wrong password.")
+            disconnect()
     
     cmdfilenamearr = pickle.dumps([cmd, filename])
     # if cipher, encrypt
@@ -77,16 +78,19 @@ if __name__ == "__main__":
     
     # upload to server
     if cmd == "write":
-
+        if encrypted:
+            blocksize = 4080
+        else:
+            blocksize = 4096
         try:
-            data = sys.stdin.buffer.read(4080)
+            data = sys.stdin.buffer.read(blocksize)
             while data:
                 if encrypted:
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
                 servsock.sendall(data_send)
-                data = sys.stdin.buffer.read(4080)
+                data = sys.stdin.buffer.read(blocksize)
                 
             # receive server response
             data = servsock.recv(4096)
@@ -101,35 +105,16 @@ if __name__ == "__main__":
     # download from server 
     elif cmd == "read":
         try:
-            filewriter = open(filename, 'wb+')
             data = servsock.recv(4096)
             while data:
                 if encrypted:
                     data_recv = cryptolib.decrypt(data, cipher, key, iv)
                 else:
                     data_recv = data
-                filewriter.write(data_recv)
+                sys.stdout.buffer.write(data_recv)
                 if len(data) < 4096:
                     break
                 data = servsock.recv(4096)
-            
-            """
-            # Get expected data size
-            data = servsock.recv(4)
-            data_size = int.from_bytes(data, "big")
-
-            # Check if data is too big
-            if shutil.disk_usage("/").free < data_size:
-                print("ERROR: Insufficient disk space. File read failed.")
-                disconnect()
-
-            # Receive data
-            data = servsock.recv(data_size)
-
-            # print to stdout
-            sys.stdout.buffer.write(data)
-            print()
-            """
         except Exception as e:
             print("ERROR: {0}".format(e))
 
