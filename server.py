@@ -77,8 +77,6 @@ if __name__ == "__main__":
                 data = pickle.loads(data)
                 cmd = data[0]
                 filename = data[1]
-                    
-                print(cmd+filename)
         
                 # only get past here if password is correct
                 
@@ -104,10 +102,7 @@ if __name__ == "__main__":
             
                         print(filename + " uploaded successfully.")
                         message = "SERVER: " + filename + " uploaded successfully."
-                        if encrypted:
-                            message = cryptolib.encrypt(message.encode(), alg, key, iv)
-                        else:
-                            message = message.encode()
+                        
                         # Cleanup
                         f_obj.close()
                         print("Done.")
@@ -116,8 +111,13 @@ if __name__ == "__main__":
                         print("ERROR: {0}".format(e))
                         message = "SERVER ERROR: {0}".format(e)
                         
-                    # send appropriate message
+                    # send response to user
                     finally:
+                        if encrypted:
+                            message = cryptolib.encrypt(message.encode(), alg, key, iv)
+                        else:
+                            message = message.encode()
+
                         connection.sendall(message)
             
                 # else, send file to client
