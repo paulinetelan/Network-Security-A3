@@ -23,6 +23,8 @@ import cryptolib, hashlib
 #### MAIN ####
 if __name__ == "__main__":
     
+    BUFFER_SIZE = 524288
+    
     # Disconnects client from server
     def disconnect():
         try:
@@ -49,7 +51,7 @@ if __name__ == "__main__":
     servsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     servsock.connect((serveradd[0], int(serveradd[1])))
 
-    # Send "crypto cmd filename iv" to server
+    # Send encryption algorithm and iv to server
     # iv = bytes
     # cipher = string
     param = [cipher, iv]
@@ -79,9 +81,9 @@ if __name__ == "__main__":
     # upload to server
     if cmd == "write":
         if encrypted:
-            blocksize = 4080
+            blocksize = BUFFER_SIZE - 16
         else:
-            blocksize = 4096
+            blocksize = BUFFER_SIZE
         try:
             data = sys.stdin.buffer.read(blocksize)
             while data:
@@ -93,7 +95,7 @@ if __name__ == "__main__":
                 data = sys.stdin.buffer.read(blocksize)
                 
             # receive server response
-            data = servsock.recv(4096)
+            data = servsock.recv(128)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
             print(data.decode("utf-8", "ignore"))
@@ -105,16 +107,16 @@ if __name__ == "__main__":
     # download from server 
     elif cmd == "read":
         try:
-            data = servsock.recv(4096)
+            data = servsock.recv(BUFFER_SIZE)
             while data:
                 if encrypted:
                     data_recv = cryptolib.decrypt(data, cipher, key, iv)
                 else:
                     data_recv = data
                 sys.stdout.buffer.write(data_recv)
-                if len(data) < 4096:
+                if len(data) < BUFFER_SIZE:
                     break
-                data = servsock.recv(4096)
+                data = servsock.recv(BUFFER_SIZE)
         except Exception as e:
             print("ERROR: {0}".format(e))
 
