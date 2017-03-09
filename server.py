@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Init socket 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Set server address
-    server_address = ('localhost', port)
+    server_address = ('172.19.1.178', port)
     sock.bind(server_address)
 
     # listen for incoming connections
