@@ -5,7 +5,6 @@
 
     Submitted by: Pauline Telan 10124075 & Albert Luu
     T02
-
 '''
 
 import sys, socket, os

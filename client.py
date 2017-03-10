@@ -5,14 +5,6 @@
 
     Submitted by: Pauline Telan 10124075 & Albert Luu
     T02
-
-    Usage: client command filename hostname:port cipher [key]
-
-        command = write (for uploading) / read (for downloading)
-        filename = file to be used by server
-        hostname:port = address of server: port where server is listening
-        cipher = aes256/aes128/none 
-        key = key to be used for encryption (doesn't have to be specified if cipher=none)
 '''
 
 import sys, socket, shutil
@@ -92,7 +84,7 @@ if __name__ == "__main__":
                     data_send = data
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
-                
+
             # receive server response
             data = servsock.recv(128)
             if encrypted:

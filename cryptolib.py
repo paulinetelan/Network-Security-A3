@@ -3,9 +3,8 @@
 '''
 ##### CPSC 526 ASSIGNMENT 2 #########
 
-    Submitted by: Pauline Telan
-    10124075 T02
-
+    Submitted by: Pauline Telan 10124075 & Albert Luu
+    T02
 '''
 
 import random, os, sys
