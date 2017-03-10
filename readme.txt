@@ -38,7 +38,6 @@ Communication Protocol description:
     a) client sends data in 4mb chunks to server
     b) server receives and processes data 
     c) once client has sent all data, server sends response to client and client displays this to console
-    
 6) If cmd=read
     a) server sends data in 4mb chunks to client
     b) client receives and processes data

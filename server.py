@@ -89,7 +89,6 @@ if __name__ == "__main__":
                         data = connection.recv(BUFFER_SIZE)
                         counter = 0
                         while data:
-                            print("DERP %d %d" % (len(data), counter))
                             counter += 1
                             if encrypted:
                                 data_recv = cryptolib.decrypt(data, alg, key, iv)
