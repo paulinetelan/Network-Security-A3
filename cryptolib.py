@@ -58,14 +58,12 @@ def verifypass(received_hash_iv, iv):
 # plain, iv = bytes
 # alg, key = string
 def encrypt(plain, alg, key, iv):
-
     key_size = int(alg.strip("aes"))
     backend = default_backend()
 
     # pad plaintext to 128-bits
     padded_plain = pad(plain, 128)
     verifiedKey = makeKey(key, key_size)
-
 
     # encrypt
     cipher = Cipher(algorithms.AES(verifiedKey), modes.CBC(iv), backend)
@@ -77,9 +75,6 @@ def encrypt(plain, alg, key, iv):
 # ciphertext, iv = bytes
 # alg, key = string
 def decrypt(ciphertext, alg, key, iv):
-    
-    print(len(ciphertext))
-
     key_size = int(alg.strip("aes"))
     backend = default_backend()
 

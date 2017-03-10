@@ -124,20 +124,21 @@ if __name__ == "__main__":
                         blocksize = BUFFER_SIZE - 16
                     else:
                         blocksize = BUFFER_SIZE
+                        
+                    f_obj = open(filename, "rb")
                     try:
-                        filereader = open(filename, 'rb+')
-                        data = filereader.read(blocksize)
-                        while (data):
+                        data = f_obj.read(blocksize)
+                        while data:
                             if encrypted:
                                 data_send = cryptolib.encrypt(data, alg, key, iv)
                             else:
                                 data_send = data
+                            print("lenth of data_send: %d"%len(data_send))
                             connection.sendall(data_send)
-                            data = filereader.read(blocksize)
-                        filereader.close()
+                            data = f_obj.read(blocksize)
+                        f_obj.close()
                     except Exception as e:
-                        print("READ ERROR: {0}".format(e))
-                        connection.sendall(bytearray("SERVER READ ERROR: {0}".format(e), "utf-8"))
+                        print("ERROR: {0}".format(e))
             except Exception as e:
                 # only breaks if wrong password is used
                 print("ERROR: {0}".format(e))

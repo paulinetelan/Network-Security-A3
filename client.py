@@ -66,7 +66,7 @@ if __name__ == "__main__":
         servsock.sendall(iv_encrypted)
         recvd_iv = servsock.recv(128)
         if recvd_iv != iv_encrypted:
-            print("ERROR: Wrong password.")
+            sys.stderr.write("ERROR: Wrong password.\n")
             disconnect()
     
     cmdfilenamearr = pickle.dumps([cmd, filename])
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
-                print("lenth of data_send: %d"%len(data_send))
+                sys.stderr.write("lenth of data_send: %d\n"%len(data_send))
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
                 
@@ -100,15 +100,16 @@ if __name__ == "__main__":
             data = servsock.recv(128)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
-            print(data.decode("utf-8", "ignore"))
+            sys.stderr.write(data.decode("utf-8", "ignore"))
             
         except Exception as e:
-            print("ERROR: {0}".format(e))
+            sys.stderr.write("ERROR: {0}".format(e))
 
         
     # download from server 
     elif cmd == "read":
         try:
+            # Receive data
             data = servsock.recv(BUFFER_SIZE)
             while data:
                 if encrypted:
@@ -116,11 +117,17 @@ if __name__ == "__main__":
                 else:
                     data_recv = data
                 sys.stdout.buffer.write(data_recv)
+                time.sleep(0.35)
+                # checks for last block
                 if len(data) < BUFFER_SIZE:
                     break
                 data = servsock.recv(BUFFER_SIZE)
+
+            sys.stderr.write(filename + " downloaded successfully.\n")
+            sys.stderr.write("File transfer complete.\n")
+            
         except Exception as e:
-            print("ERROR: {0}".format(e))
+            sys.stderr.write("READ ERROR: {0}".format(e))
 
     disconnect()
             
