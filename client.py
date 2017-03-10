@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 '''
-##### CPSC 526 ASSIGNMENT 2 #########
+##### CPSC 526 ASSIGNMENT 3 #########
 
-    Submitted by: Pauline Telan
-    10124075 T02
+    Submitted by: Pauline Telan 10124075 & Albert Luu
+    T02
 
     Usage: client command filename hostname:port cipher [key]
 
@@ -80,10 +80,9 @@ if __name__ == "__main__":
     
     # upload to server
     if cmd == "write":
+        blocksize = BUFFER_SIZE
         if encrypted:
             blocksize = BUFFER_SIZE - 16
-        else:
-            blocksize = BUFFER_SIZE
         try:
             data = sys.stdin.buffer.read(blocksize)
             while data:
@@ -91,10 +90,8 @@ if __name__ == "__main__":
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
-                sys.stderr.write("lenth of data_send: %d\n"%len(data_send))
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
-                
                 
             # receive server response
             data = servsock.recv(128)

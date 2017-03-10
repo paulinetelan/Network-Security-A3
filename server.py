@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 '''
-##### CPSC 526 ASSIGNMENT 2 #########
+##### CPSC 526 ASSIGNMENT 3 #########
 
-    Submitted by: Pauline Telan
-    10124075 T02
+    Submitted by: Pauline Telan 10124075 & Albert Luu
+    T02
 
 '''
 
@@ -133,7 +133,6 @@ if __name__ == "__main__":
                                 data_send = cryptolib.encrypt(data, alg, key, iv)
                             else:
                                 data_send = data
-                            print("lenth of data_send: %d"%len(data_send))
                             connection.sendall(data_send)
                             data = f_obj.read(blocksize)
                         f_obj.close()
@@ -142,7 +141,6 @@ if __name__ == "__main__":
             except Exception as e:
                 # only breaks if wrong password is used
                 print("ERROR: {0}".format(e))
-                connection.sendall(bytearray("SERVER ERROR: Wrong key.", "utf-8"))
                 
             finally:
                 connection.shutdown(1)
