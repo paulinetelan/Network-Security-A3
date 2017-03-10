@@ -70,6 +70,7 @@ if __name__ == "__main__":
     # cmd and filename are in bytes
     servsock.sendall(cmdfilenamearr)
     
+    time.sleep(0.1)
     # upload to server
     if cmd == "write":
         blocksize = BUFFER_SIZE

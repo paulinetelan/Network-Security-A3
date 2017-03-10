@@ -85,7 +85,6 @@ if __name__ == "__main__":
                     try:
                         # Open filename
                         f_obj = open(filename, "wb+")
-                        
                         # Receive data
                         data = connection.recv(BUFFER_SIZE)
                         counter = 0
