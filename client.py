@@ -23,7 +23,7 @@ import cryptolib, hashlib
 #### MAIN ####
 if __name__ == "__main__":
     
-    BUFFER_SIZE = 524288
+    BUFFER_SIZE = 4194304
     
     # Disconnects client from server
     def disconnect():
@@ -91,8 +91,10 @@ if __name__ == "__main__":
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
+                print("lenth of data_send: %d"%len(data_send))
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
+                
                 
             # receive server response
             data = servsock.recv(128)

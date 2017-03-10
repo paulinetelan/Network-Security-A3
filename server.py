@@ -18,7 +18,7 @@ import cryptolib
 #### MAIN ####
 if __name__ == "__main__":
     
-    BUFFER_SIZE = 524288
+    BUFFER_SIZE = 4194304
     
     # Parse input
     port = int(sys.argv[1].strip("'"))
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Init socket 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Set server address
-    server_address = ('172.19.1.178', port)
+    server_address = ('localhost', port)
     sock.bind(server_address)
 
     # listen for incoming connections
@@ -84,15 +84,19 @@ if __name__ == "__main__":
                     try:
                         # Open filename
                         f_obj = open(filename, "wb+")
-            
+                        
                         # Receive data
                         data = connection.recv(BUFFER_SIZE)
+                        counter = 0
                         while data:
+                            print("DERP %d %d" % (len(data), counter))
+                            counter += 1
                             if encrypted:
                                 data_recv = cryptolib.decrypt(data, alg, key, iv)
                             else:
                                 data_recv = data
                             f_obj.write(data_recv)
+                            time.sleep(0.35)
                             # checks for last block
                             if len(data) < BUFFER_SIZE:
                                 break

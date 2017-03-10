@@ -66,6 +66,7 @@ def encrypt(plain, alg, key, iv):
     padded_plain = pad(plain, 128)
     verifiedKey = makeKey(key, key_size)
 
+
     # encrypt
     cipher = Cipher(algorithms.AES(verifiedKey), modes.CBC(iv), backend)
     encryptor = cipher.encryptor()
@@ -76,6 +77,8 @@ def encrypt(plain, alg, key, iv):
 # ciphertext, iv = bytes
 # alg, key = string
 def decrypt(ciphertext, alg, key, iv):
+    
+    print(len(ciphertext))
 
     key_size = int(alg.strip("aes"))
     backend = default_backend()
