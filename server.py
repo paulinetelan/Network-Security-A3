@@ -95,6 +95,7 @@ if __name__ == "__main__":
                                 data_recv = cryptolib.decrypt(data, alg, key, iv)
                             else:
                                 data_recv = data
+                            print("Recieved block %d" % counter)
                             f_obj.write(data_recv)
                             time.sleep(0.35)
                             # checks for last block
