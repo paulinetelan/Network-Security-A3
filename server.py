@@ -18,6 +18,8 @@ import cryptolib
 #### MAIN ####
 if __name__ == "__main__":
     
+    BUFFER_SIZE = 4194304
+    
     # Parse input
     port = int(sys.argv[1].strip("'"))
 
@@ -41,12 +43,12 @@ if __name__ == "__main__":
         print("Listening on port %d" % port)
         print("Using secret key: " + key)
         connection, client_address = sock.accept()
+        print("Client " + client_address[0] + " connected.")
 
         # get parameters [cipher, iv(opt)]
-        data = connection.recv(4096)
+        data = connection.recv(128)
         param = pickle.loads(data)
-        # Display parameters
-        print("Client " + client_address[0] + " connected.")
+        
         # display iv if cipher specified
         iv_str = ''
         alg = param[0]
@@ -56,7 +58,7 @@ if __name__ == "__main__":
             iv = param[1]
             iv_str = "IV: "+ param[1].decode('utf-8', 'replace')
         
-        print("Crypto: " + alg + " " + iv_str)
+        print("Encryption: " + alg + " " + iv_str)
         
         # password authentication
         if encrypted:
@@ -71,81 +73,76 @@ if __name__ == "__main__":
         if (not encrypted) or pass_ok:
             try:
                 # receive cmd + filename
-                data = connection.recv(4096)
+                data = connection.recv(BUFFER_SIZE)
                 if encrypted:
                     data = cryptolib.decrypt(data, alg, key, iv)
                 data = pickle.loads(data)
                 cmd = data[0]
                 filename = data[1]
-        
-                # only get past here if password is correct
                 
-                # if cmd = write, download file from client
                 if cmd == "write":
                     try:
                         # Open filename
                         f_obj = open(filename, "wb+")
-            
+                        
                         # Receive data
-                        data = connection.recv(4096)
+                        data = connection.recv(BUFFER_SIZE)
+                        counter = 0
                         while data:
+                            print("DERP %d %d" % (len(data), counter))
+                            counter += 1
                             if encrypted:
                                 data_recv = cryptolib.decrypt(data, alg, key, iv)
                             else:
                                 data_recv = data
                             f_obj.write(data_recv)
+                            time.sleep(0.35)
                             # checks for last block
-                            if len(data) < 4096:
+                            if len(data) < BUFFER_SIZE:
                                 break
-                                
-                            data = connection.recv(4096)
+                            data = connection.recv(BUFFER_SIZE)
             
                         print(filename + " uploaded successfully.")
                         message = "SERVER: " + filename + " uploaded successfully."
                         
                         # Cleanup
                         f_obj.close()
-                        print("Done.")
-            
-                    except Exception as e:
-                        print("ERROR: {0}".format(e))
-                        message = "SERVER ERROR: {0}".format(e)
+                        print("File transfer complete.")
                         
-                    # send response to user
+                    except Exception as e:
+                        print("WRITE ERROR: {0}".format(e))
+                        message = "SERVER WRITE ERROR: {0}".format(e)
+                        
                     finally:
+                        message = message.encode()
                         if encrypted:
-                            message = cryptolib.encrypt(message.encode(), alg, key, iv)
-                        else:
-                            message = message.encode()
-
+                            message = cryptolib.encrypt(message, alg, key, iv)
                         connection.sendall(message)
-            
-                # else, send file to client
+                
                 elif cmd == "read":
                     if encrypted:
-                        blocksize = 4080
+                        blocksize = BUFFER_SIZE - 16
                     else:
-                        blocksize = 4096
+                        blocksize = BUFFER_SIZE
+                        
+                    f_obj = open(filename, "rb")
                     try:
-                        filereader = open(filename, 'rb+')
-                        data = filereader.read(blocksize)
-                        while (data):
+                        data = f_obj.read(blocksize)
+                        while data:
                             if encrypted:
                                 data_send = cryptolib.encrypt(data, alg, key, iv)
                             else:
                                 data_send = data
+                            print("lenth of data_send: %d"%len(data_send))
                             connection.sendall(data_send)
-                            data = filereader.read(blocksize)
-                        filereader.close()
+                            data = f_obj.read(blocksize)
+                        f_obj.close()
                     except Exception as e:
                         print("ERROR: {0}".format(e))
-                        connection.sendall(bytearray("SERVER ERROR: {0}".format(e), "utf-8"))
-
             except Exception as e:
-                
                 # only breaks if wrong password is used
                 print("ERROR: {0}".format(e))
-                connection.sendall(bytearray("        SERVER ERROR: Wrong key.", "utf-8"))
+                connection.sendall(bytearray("SERVER ERROR: Wrong key.", "utf-8"))
                 
             finally:
                 connection.shutdown(1)

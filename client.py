@@ -23,6 +23,8 @@ import cryptolib, hashlib
 #### MAIN ####
 if __name__ == "__main__":
     
+    BUFFER_SIZE = 4194304
+    
     # Disconnects client from server
     def disconnect():
         try:
@@ -49,7 +51,7 @@ if __name__ == "__main__":
     servsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     servsock.connect((serveradd[0], int(serveradd[1])))
 
-    # Send "crypto cmd filename iv" to server
+    # Send encryption algorithm and iv to server
     # iv = bytes
     # cipher = string
     param = [cipher, iv]
@@ -64,7 +66,7 @@ if __name__ == "__main__":
         servsock.sendall(iv_encrypted)
         recvd_iv = servsock.recv(128)
         if recvd_iv != iv_encrypted:
-            print("ERROR: Wrong password.")
+            sys.stderr.write("ERROR: Wrong password.\n")
             disconnect()
     
     cmdfilenamearr = pickle.dumps([cmd, filename])
@@ -79,9 +81,9 @@ if __name__ == "__main__":
     # upload to server
     if cmd == "write":
         if encrypted:
-            blocksize = 4080
+            blocksize = BUFFER_SIZE - 16
         else:
-            blocksize = 4096
+            blocksize = BUFFER_SIZE
         try:
             data = sys.stdin.buffer.read(blocksize)
             while data:
@@ -89,34 +91,43 @@ if __name__ == "__main__":
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
+                sys.stderr.write("lenth of data_send: %d\n"%len(data_send))
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
                 
+                
             # receive server response
-            data = servsock.recv(4096)
+            data = servsock.recv(128)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
-            print(data.decode("utf-8", "ignore"))
+            sys.stderr.write(data.decode("utf-8", "ignore"))
             
         except Exception as e:
-            print("ERROR: {0}".format(e))
+            sys.stderr.write("ERROR: {0}".format(e))
 
         
     # download from server 
     elif cmd == "read":
         try:
-            data = servsock.recv(4096)
+            # Receive data
+            data = servsock.recv(BUFFER_SIZE)
             while data:
                 if encrypted:
                     data_recv = cryptolib.decrypt(data, cipher, key, iv)
                 else:
                     data_recv = data
                 sys.stdout.buffer.write(data_recv)
-                if len(data) < 4096:
+                time.sleep(0.35)
+                # checks for last block
+                if len(data) < BUFFER_SIZE:
                     break
-                data = servsock.recv(4096)
+                data = servsock.recv(BUFFER_SIZE)
+
+            sys.stderr.write(filename + " downloaded successfully.\n")
+            sys.stderr.write("File transfer complete.\n")
+            
         except Exception as e:
-            print("ERROR: {0}".format(e))
+            sys.stderr.write("READ ERROR: {0}".format(e))
 
     disconnect()
             

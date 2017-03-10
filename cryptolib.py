@@ -58,7 +58,6 @@ def verifypass(received_hash_iv, iv):
 # plain, iv = bytes
 # alg, key = string
 def encrypt(plain, alg, key, iv):
-
     key_size = int(alg.strip("aes"))
     backend = default_backend()
 
@@ -76,7 +75,6 @@ def encrypt(plain, alg, key, iv):
 # ciphertext, iv = bytes
 # alg, key = string
 def decrypt(ciphertext, alg, key, iv):
-
     key_size = int(alg.strip("aes"))
     backend = default_backend()
 
