@@ -73,8 +73,10 @@ if __name__ == "__main__":
             try:
                 # receive cmd + filename
                 data = connection.recv(BUFFER_SIZE)
+                blocksize = BUFFER_SIZE
                 if encrypted:
                     data = cryptolib.decrypt(data, alg, key, iv)
+                    blocksize = BUFFER_SIZE - 16
                 data = pickle.loads(data)
                 cmd = data[0]
                 filename = data[1]
@@ -118,11 +120,6 @@ if __name__ == "__main__":
                         connection.sendall(message)
                 
                 elif cmd == "read":
-                    if encrypted:
-                        blocksize = BUFFER_SIZE - 16
-                    else:
-                        blocksize = BUFFER_SIZE
-                        
                     f_obj = open(filename, "rb")
                     try:
                         data = f_obj.read(blocksize)
