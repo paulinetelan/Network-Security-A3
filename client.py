@@ -15,7 +15,7 @@ import cryptolib, hashlib
 #### MAIN ####
 if __name__ == "__main__":
     
-    BUFFER_SIZE = 4194304
+    BUFFER_SIZE = 4194303
     
     # Disconnects client from server
     def disconnect():
@@ -70,9 +70,9 @@ if __name__ == "__main__":
     # cmd and filename are in bytes
     servsock.sendall(cmdfilenamearr)
     
-    time.sleep(0.1)
     # upload to server
     if cmd == "write":
+        time.sleep(0.1)
         blocksize = BUFFER_SIZE
         if encrypted:
             blocksize = BUFFER_SIZE - 16
@@ -94,28 +94,32 @@ if __name__ == "__main__":
             
         except Exception as e:
             sys.stderr.write("ERROR: {0}".format(e))
-
-        
+            
     # download from server 
     elif cmd == "read":
         try:
             # Receive data
-            data = servsock.recv(BUFFER_SIZE)
-            while data:
-                if encrypted:
-                    data_recv = cryptolib.decrypt(data, cipher, key, iv)
-                else:
-                    data_recv = data
-                sys.stdout.buffer.write(data_recv)
-                time.sleep(0.35)
-                # checks for last block
-                if len(data) < BUFFER_SIZE:
-                    break
+            verif = servsock.recv(128)
+            if encrypted:
+                verif = cryptolib.decrypt(verif, cipher, key, iv)
+            if verif.decode() == '0':
                 data = servsock.recv(BUFFER_SIZE)
+                while data:
+                    if encrypted:
+                        data_recv = cryptolib.decrypt(data, cipher, key, iv)
+                    else:
+                        data_recv = data
+                    sys.stdout.buffer.write(data_recv)
+                    time.sleep(0.35)
+                    # checks for last block
+                    if len(data) < BUFFER_SIZE:
+                        break
+                    data = servsock.recv(BUFFER_SIZE)
 
-            sys.stderr.write(filename + " downloaded successfully.\n")
-            sys.stderr.write("File transfer complete.\n")
-            
+                sys.stderr.write(filename + " downloaded successfully.\n")
+                sys.stderr.write("File transfer complete.\n")
+            else:
+                sys.stderr.write("SERVER ERROR: File not found")
         except Exception as e:
             sys.stderr.write("READ ERROR: {0}".format(e))
 

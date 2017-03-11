@@ -17,7 +17,7 @@ import cryptolib
 #### MAIN ####
 if __name__ == "__main__":
     
-    BUFFER_SIZE = 4194304
+    BUFFER_SIZE = 4194303
     
     # Parse input
     port = int(sys.argv[1].strip("'"))
@@ -120,17 +120,29 @@ if __name__ == "__main__":
                         connection.sendall(message)
                 
                 elif cmd == "read":
-                    f_obj = open(filename, "rb")
                     try:
+                        f_obj = open(filename, 'rb')
+                        message = "0".encode()
+                        if encrypted:
+                            message = cryptolib.encrypt(message, alg, key, iv)
+                        connection.sendall(message)
                         data = f_obj.read(blocksize)
+                        counter = 0
                         while data:
+                            counter += 1
                             if encrypted:
                                 data_send = cryptolib.encrypt(data, alg, key, iv)
                             else:
                                 data_send = data
+                            print("Sending block %d" % counter)
                             connection.sendall(data_send)
                             data = f_obj.read(blocksize)
                         f_obj.close()
+                    except FileNotFoundError:
+                        message = "1".encode()
+                        if encrypted:
+                            message = cryptolib.encrypt(message, alg, key, iv)
+                        connection.sendall(message)
                     except Exception as e:
                         print("ERROR: {0}".format(e))
             except Exception as e:
