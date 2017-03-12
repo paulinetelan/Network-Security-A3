@@ -16,8 +16,14 @@ import cryptolib
 
 #### MAIN ####
 if __name__ == "__main__":
+
+    # returns size of incoming data size
+    def recv_datasize():
+        data_size_bytes = connection.recv(4)
+        data_recv_blocksize = int.from_bytes(data_size_bytes, 'big')
+        return data_recv_blocksize
     
-    BUFFER_SIZE = 4194303
+    BUFFER_SIZE = 4096 #4194303
     
     # Parse input
     port = int(sys.argv[1].strip("'"))
@@ -85,29 +91,45 @@ if __name__ == "__main__":
                     try:
                         # Open filename
                         f_obj = open(filename, "wb+")
-                        # Receive data
-                        data = connection.recv(BUFFER_SIZE)
-                        counter = 0
-                        while data:
-                            counter += 1
-                            if encrypted:
-                                data_recv = cryptolib.decrypt(data, alg, key, iv)
-                            else:
-                                data_recv = data
-                            print("Recieved block %d" % counter)
-                            f_obj.write(data_recv)
-                            time.sleep(0.35)
-                            # checks for last block
-                            if len(data) < BUFFER_SIZE:
-                                break
-                            data = connection.recv(BUFFER_SIZE)
-            
-                        print(filename + " uploaded successfully.")
-                        message = "SERVER: " + filename + " uploaded successfully."
-                        
-                        # Cleanup
-                        f_obj.close()
-                        print("File transfer complete.")
+
+                        # receive data block size
+                        data_size = recv_datasize()
+                        # empty file
+                        if data_size == 0:
+                            break
+
+                        else:
+                            # Receive data
+                            data = connection.recv(data_size)
+                            counter = 0
+                            while data:
+                                counter += 1
+                                if encrypted:
+                                    data_recv = cryptolib.decrypt(data, alg, key, iv)
+                                else:
+                                    data_recv = data
+                                print("Recieved block %d" % counter)
+                                print(len(data))
+                                f_obj.write(data_recv)
+                                
+                                # receive size of next block 
+                                data_size = recv_datasize()
+
+                                # client sends data_size = 0 if eof
+                                if data_size == 0:
+                                    break
+
+                                data = connection.recv(data_size)
+                                # keep receiving data until length matches data_size
+                                while len(data) < data_size:
+                                    data += connection.recv(data_size)
+                
+                            print(filename + " uploaded successfully.")
+                            message = "SERVER: " + filename + " uploaded successfully."
+                            
+                            # Cleanup
+                            f_obj.close()
+                            print("File transfer complete.")
                         
                     except Exception as e:
                         print("WRITE ERROR: {0}".format(e))
@@ -126,6 +148,7 @@ if __name__ == "__main__":
                         if encrypted:
                             message = cryptolib.encrypt(message, alg, key, iv)
                         connection.sendall(message)
+
                         data = f_obj.read(blocksize)
                         counter = 0
                         while data:
@@ -138,6 +161,8 @@ if __name__ == "__main__":
                             connection.sendall(data_send)
                             data = f_obj.read(blocksize)
                         f_obj.close()
+                    
+                    # check if file exists
                     except FileNotFoundError:
                         message = "1".encode()
                         if encrypted:

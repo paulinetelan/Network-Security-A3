@@ -15,7 +15,7 @@ import cryptolib, hashlib
 #### MAIN ####
 if __name__ == "__main__":
     
-    BUFFER_SIZE = 4194303
+    BUFFER_SIZE = 4096 #4194303
     
     # Disconnects client from server
     def disconnect():
@@ -83,13 +83,26 @@ if __name__ == "__main__":
                     data_send = cryptolib.encrypt(data, cipher, key, iv)
                 else:
                     data_send = data
+
+                # send data size to server
+                data_size = len(data_send)
+                servsock.sendall(data_size.to_bytes(4, 'big'))
+                
+                # send data
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
+
+            # send fake EOF at the end of file
+            eof = 0
+            servsock.sendall(eof.to_bytes('4', 'big'))
+
+            sys.stderr.write("after sending eof")
 
             # receive server response
             data = servsock.recv(128)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
+            sys.stderr.write("before serv resp decode")
             sys.stderr.write(data.decode("utf-8", "ignore"))
             
         except Exception as e:
