@@ -23,7 +23,7 @@ if __name__ == "__main__":
         data_recv_blocksize = int.from_bytes(data_size_bytes, 'big')
         return data_recv_blocksize
     
-    BUFFER_SIZE = 4096 #4194303
+    BUFFER_SIZE = 4096
     
     # Parse input
     port = int(sys.argv[1].strip("'"))
@@ -88,17 +88,16 @@ if __name__ == "__main__":
                 filename = data[1]
                 
                 if cmd == "write":
+                    
+                    message = "SERVER: " + filename + " uploaded successfully."
                     try:
                         # Open filename
                         f_obj = open(filename, "wb+")
 
                         # receive data block size
                         data_size = recv_datasize()
-                        # empty file
-                        if data_size == 0:
-                            break
-
-                        else:
+                        # if file not empty
+                        if data_size != 0:
                             # Receive data
                             data = connection.recv(data_size)
                             counter = 0
@@ -114,7 +113,6 @@ if __name__ == "__main__":
                                 
                                 # receive size of next block 
                                 data_size = recv_datasize()
-
                                 # client sends data_size = 0 if eof
                                 if data_size == 0:
                                     break
@@ -123,12 +121,10 @@ if __name__ == "__main__":
                                 # keep receiving data until length matches data_size
                                 while len(data) < data_size:
                                     data += connection.recv(data_size)
-                
-                            print(filename + " uploaded successfully.")
-                            message = "SERVER: " + filename + " uploaded successfully."
-                            
+
                             # Cleanup
                             f_obj.close()
+                            print(filename + " uploaded successfully.")
                             print("File transfer complete.")
                         
                     except Exception as e:
@@ -144,11 +140,14 @@ if __name__ == "__main__":
                 elif cmd == "read":
                     try:
                         f_obj = open(filename, 'rb')
+
+                        # send that file is found
                         message = "0".encode()
                         if encrypted:
                             message = cryptolib.encrypt(message, alg, key, iv)
                         connection.sendall(message)
 
+                        # send data
                         data = f_obj.read(blocksize)
                         counter = 0
                         while data:
@@ -158,8 +157,15 @@ if __name__ == "__main__":
                             else:
                                 data_send = data
                             print("Sending block %d" % counter)
+
+                            # send data size to server
+                            data_size = len(data_send)
+                            connection.sendall(data_size.to_bytes(4, 'big'))
+
+                            # send data
                             connection.sendall(data_send)
                             data = f_obj.read(blocksize)
+
                         f_obj.close()
                     
                     # check if file exists

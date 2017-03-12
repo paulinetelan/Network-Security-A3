@@ -14,8 +14,14 @@ import cryptolib, hashlib
 
 #### MAIN ####
 if __name__ == "__main__":
+
+    # returns size of incoming data size
+    def recv_datasize():
+        data_size_bytes = servsock.recv(4)
+        data_recv_blocksize = int.from_bytes(data_size_bytes, 'big')
+        return data_recv_blocksize
     
-    BUFFER_SIZE = 4096 #4194303
+    BUFFER_SIZE = 4096
     
     # Disconnects client from server
     def disconnect():
@@ -87,26 +93,23 @@ if __name__ == "__main__":
                 # send data size to server
                 data_size = len(data_send)
                 servsock.sendall(data_size.to_bytes(4, 'big'))
-                
+
                 # send data
                 servsock.sendall(data_send)
                 data = sys.stdin.buffer.read(blocksize)
 
             # send fake EOF at the end of file
-            eof = 0
-            servsock.sendall(eof.to_bytes('4', 'big'))
-
-            sys.stderr.write("after sending eof")
-
+            send_eof = 0
+            servsock.sendall(send_eof.to_bytes(4, 'big'))
+            
             # receive server response
             data = servsock.recv(128)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
-            sys.stderr.write("before serv resp decode")
             sys.stderr.write(data.decode("utf-8", "ignore"))
             
         except Exception as e:
-            sys.stderr.write("ERROR: {0}".format(e))
+            sys.stderr.write("WRITE ERROR: {0}\n".format(e))
             
     # download from server 
     elif cmd == "read":
@@ -115,22 +118,33 @@ if __name__ == "__main__":
             verif = servsock.recv(128)
             if encrypted:
                 verif = cryptolib.decrypt(verif, cipher, key, iv)
-            if verif.decode() == '0':
-                data = servsock.recv(BUFFER_SIZE)
-                while data:
-                    if encrypted:
-                        data_recv = cryptolib.decrypt(data, cipher, key, iv)
-                    else:
-                        data_recv = data
-                    sys.stdout.buffer.write(data_recv)
-                    time.sleep(0.35)
-                    # checks for last block
-                    if len(data) < BUFFER_SIZE:
-                        break
-                    data = servsock.recv(BUFFER_SIZE)
 
-                sys.stderr.write(filename + " downloaded successfully.\n")
-                sys.stderr.write("File transfer complete.\n")
+            # if filename exists
+            if verif.decode() == '0':
+                 # receive data block size
+                data_size = recv_datasize()
+                # if file not empty
+                if data_size != 0:
+                    data = servsock.recv(data_size)
+                    while data:
+                        if encrypted:
+                            data_recv = cryptolib.decrypt(data, cipher, key, iv)
+                        else:
+                            data_recv = data
+
+                        sys.stdout.buffer.write(data_recv)
+
+                        # receive size of next block 
+                        data_size = recv_datasize()
+                        # check for eof
+                        if data_size == 0:
+                            break
+                        data = servsock.recv(data_size)
+                        while len(data) < data_size:
+                            data += servsock.recv(data_size)
+
+                    sys.stderr.write(filename + " downloaded successfully.\n")
+                    sys.stderr.write("File transfer complete.\n")
             else:
                 sys.stderr.write("SERVER ERROR: File not found")
         except Exception as e:
