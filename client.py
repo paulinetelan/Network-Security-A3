@@ -101,12 +101,12 @@ if __name__ == "__main__":
             # send fake EOF at the end of file
             send_eof = 0
             servsock.sendall(send_eof.to_bytes(4, 'big'))
-            
+
             # receive server response
-            data = servsock.recv(128)
+            data = servsock.recv(BUFFER_SIZE)
             if encrypted:
                 data = cryptolib.decrypt(data, cipher, key, iv)
-            sys.stderr.write(data.decode("utf-8", "ignore"))
+            sys.stderr.write(data.decode("utf-8", "ignore")+"\n")
             
         except Exception as e:
             sys.stderr.write("WRITE ERROR: {0}\n".format(e))
