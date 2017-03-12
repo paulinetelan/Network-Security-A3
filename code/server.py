@@ -23,7 +23,7 @@ if __name__ == "__main__":
         data_recv_blocksize = int.from_bytes(data_size_bytes, 'big')
         return data_recv_blocksize
     
-    BUFFER_SIZE = 4096
+    BUFFER_SIZE = 4194304
     
     # Parse input
     port = int(sys.argv[1].strip("'"))
@@ -100,9 +100,12 @@ if __name__ == "__main__":
                         if data_size != 0:
                             # Receive data
                             data = connection.recv(data_size)
+                            while len(data) < data_size:
+                                data += connection.recv(data_size - len(data))
                             counter = 0
                             while data:
                                 counter += 1
+                                print('recv block %d' % counter)
                                 if encrypted:
                                     data_recv = cryptolib.decrypt(data, alg, key, iv)
                                 else:
@@ -119,7 +122,7 @@ if __name__ == "__main__":
                                 data = connection.recv(data_size)
                                 # keep receiving data until length matches data_size
                                 while len(data) < data_size:
-                                    data += connection.recv(data_size)
+                                    data += connection.recv(data_size - len(data))
 
                             # Cleanup
                             f_obj.close()

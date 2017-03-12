@@ -21,7 +21,7 @@ if __name__ == "__main__":
         data_recv_blocksize = int.from_bytes(data_size_bytes, 'big')
         return data_recv_blocksize
     
-    BUFFER_SIZE = 4096
+    BUFFER_SIZE = 4194304
     
     # Disconnects client from server
     def disconnect():
@@ -126,6 +126,8 @@ if __name__ == "__main__":
                 # if file not empty
                 if data_size != 0:
                     data = servsock.recv(data_size)
+                    while len(data) < data_size:
+                        data += servsock.recv(data_size - len(data))
                     while data:
                         if encrypted:
                             data_recv = cryptolib.decrypt(data, cipher, key, iv)
@@ -141,7 +143,7 @@ if __name__ == "__main__":
                             break
                         data = servsock.recv(data_size)
                         while len(data) < data_size:
-                            data += servsock.recv(data_size)
+                            data += servsock.recv(data_size - len(data))
 
                     sys.stderr.write(filename + " downloaded successfully.\n")
                     sys.stderr.write("File transfer complete.\n")
