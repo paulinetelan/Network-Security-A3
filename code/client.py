@@ -3,7 +3,7 @@
 '''
 ##### CPSC 526 ASSIGNMENT 3 #########
 
-    Submitted by: Pauline Telan 10124075 & Albert Luu
+    Submitted by: Pauline Telan 10124075 & Albert Luu 10129499
     T02
 '''
 
